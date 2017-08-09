@@ -33,9 +33,7 @@ public class SubscribeCallback implements MqttCallback {
 
     private static final long RECONNECT_INTERVAL = TimeUnit.SECONDS.toMillis(10);
 
-    private static final String JDBC_URL = "jdbc:mysql://localhost:8889/mqtt_messages?user=root&password=root";
-
-    private static final String SQL_INSERT = "INSERT INTO `Messages` (`message`,`topic`,`quality_of_service`) VALUES (?,?,?)";
+    private static final String SQL_INSERT = "INSERT INTO Messages (message,topic,quality_of_service) VALUES (?,?,?)";
 
 
     private final MqttClient mqttClient;
@@ -46,7 +44,7 @@ public class SubscribeCallback implements MqttCallback {
         this.mqttClient = mqttClient;
 
         try {
-            final Connection conn = DriverManager.getConnection(JDBC_URL);
+            final Connection conn = connectToDatabaseOrDie();
             statement = conn.prepareStatement(SQL_INSERT);
         } catch (SQLException e) {
             log.error("Could not connect to database. Exiting", e);
@@ -54,7 +52,6 @@ public class SubscribeCallback implements MqttCallback {
         }
     }
 
-    @Override
     public void connectionLost(Throwable cause) {
         try {
             log.info("Connection lost. Trying to reconnect");
@@ -73,13 +70,73 @@ public class SubscribeCallback implements MqttCallback {
         }
     }
 
-    @Override
-    public void messageArrived(MqttTopic topic, MqttMessage message) throws Exception {
-        log.debug("Message arrived with QoS {} on Topic {}. Message size: {} bytes", message.getQos(), topic.getName(), message.getPayload().length);
+    private Connection connectToDatabaseOrDie()
+    {
+
+//        Connection c = null;
+//        try {
+//            Class.forName("org.postgresql.Driver");
+//            c = DriverManager
+//                    .getConnection("jdbc:postgresql://localhost:5432/testdb",
+//                            "teopeurt", "");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.err.println(e.getClass().getName()+": "+e.getMessage());
+//            System.exit(0);
+//        }
+//        System.out.println("Opened database successfully");
+
+        Connection conn = null;
+        try
+        {
+            Class.forName("org.postgresql.Driver");
+            String url = "jdbc:postgresql://localhost:5432/testdb";
+            conn = DriverManager.getConnection(url,"teopeurt", "123");
+        }
+        catch (ClassNotFoundException e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            System.exit(2);
+        }
+
+        System.out.println("Opened database successfully");
+        return conn;
+    }
+
+//    @Override
+//    public void messageArrived(MqttTopic topic, MqttMessage message) throws Exception {
+//        log.debug("Message arrived with QoS {} on Topic {}. Message size: {} bytes", message.getQos(), topic.getName(), message.getPayload().length);
+//
+//        try {
+//            statement.setBytes(1, message.getPayload());
+//            statement.setString(2, topic.getName());
+//            statement.setInt(3, message.getQos());
+//
+//            //Ok, let's persist to the database
+//            statement.executeUpdate();
+//        } catch (SQLException e) {
+//            log.error("Error while inserting", e);
+//        }
+//
+//    }
+
+//    @Override
+//    public void deliveryComplete(MqttDeliveryToken token) {
+//        //no-op
+//    }
+
+    public void messageArrived(String topic, MqttMessage message) throws Exception {
+
+        log.debug("Message arrived with QoS {} on Topic {}. Message size: {} bytes", message.getQos(), topic, message.getPayload().length);
 
         try {
-            statement.setBytes(1, message.getPayload());
-            statement.setString(2, topic.getName());
+            statement.setObject(1, message.getPayload());
+            statement.setString(2, topic);
             statement.setInt(3, message.getQos());
 
             //Ok, let's persist to the database
@@ -90,8 +147,7 @@ public class SubscribeCallback implements MqttCallback {
 
     }
 
-    @Override
-    public void deliveryComplete(MqttDeliveryToken token) {
-        //no-op
+    public void deliveryComplete(IMqttDeliveryToken token) {
+
     }
 }

@@ -2,7 +2,7 @@ package com.dcsquare.blog;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.internal.MemoryPersistence;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,10 +13,9 @@ public class WildcardSubscriber {
 
     private static final Logger log = LoggerFactory.getLogger(WildcardSubscriber.class);
 
+    public static final String BROKER_URL = "tcp://192.168.1.232:1883";
 
-    public static final String BROKER_URL = "tcp://broker.mqttdashboard.com:1883";
-
-    private static final String TOPIC_SUBSCRIPTION = "#";
+    private static final String TOPIC_SUBSCRIPTION = "chance";
 
     private static final int QUALITY_OF_SERVICE_LEVEL = 2;
 
